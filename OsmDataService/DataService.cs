@@ -6,6 +6,7 @@ using OsmSharp.Osm.Data.Core.Processor.Filter;
 using OsmSharp.Osm.Data.PBF.Raw.Processor;
 using OsmSharp.Osm.Data.XML.Processor;
 using OsmSharp.Tools.Math.Geo;
+using OsmDataService.Databases;
 
 namespace OsmDataService
 {
@@ -30,31 +31,37 @@ namespace OsmDataService
 
             DataProcessorSource source = null;
             FileStream sourceStream = null;
+            NamedSource namedSource;
             if (pbfFile.Exists)
-            {
+            { // first try PBF: more efficient.
                 // create PBF source.
                 sourceStream = pbfFile.OpenRead();
                 source = new PBFDataProcessorSource(sourceStream);
+
+                // create filter.
+                DataProcessorFilter filter = new DataProcessorFilterBoundingBox(box);
+                filter.RegisterSource(source);
+                source = filter;
             }
             else if (xmlFile.Exists)
-            {
+            { // then try XML.
                 // create XML source.
                 sourceStream = xmlFile.OpenRead();
                 source = new XmlDataProcessorSource(sourceStream);
-            }
-            //else if () // implement also data sources that are not files but name 
-                // datasource that can be databases or other sources.
-            //{
-                
-            //}
-            else
-            {
-                // oeps! file not found!
-                throw new FileNotFoundException("File not found!", xmlFile.Name);
-            }
 
-            // create the filter.
-            DataProcessorFilter filter = new DataProcessorFilterBoundingBox(box);
+                // create filter.
+                DataProcessorFilter filter = new DataProcessorFilterBoundingBox(box);
+                filter.RegisterSource(source);
+                source = filter;
+            }
+            else if (NamedSourceCollection.Instance.TryGetSource(dataSourceName, out namedSource))
+            { // then try a named source.
+                source = namedSource.Get(box);
+            }
+            else
+            { // oeps! file or named source not found!
+                throw new FileNotFoundException("File or name source {0} not found!", dataSourceName);
+            }
 
             // create the target.
             var result = new StringBuilder();
@@ -62,13 +69,15 @@ namespace OsmDataService
             var target = new XmlDataProcessorTarget(writer);
 
             // execute the processing.
-            target.RegisterSource(filter);
-            filter.RegisterSource(source);
+            target.RegisterSource(source);
             target.Pull();
 
-            // close the source stream.
-            sourceStream.Close();
-            sourceStream.Dispose();
+            // close the source stream if needed.
+            if (sourceStream != null)
+            {
+                sourceStream.Close();
+                sourceStream.Dispose();
+            }
 
             return result.ToString();
         }
