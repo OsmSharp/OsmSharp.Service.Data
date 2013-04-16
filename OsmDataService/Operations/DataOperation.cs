@@ -7,7 +7,6 @@ namespace OsmDataService.Operations
     /// The default data operation.
     /// </summary>
     [Route("/data/{X}/{Y}/{Zoom}/{File}", "GET")] 
-    [DataContract]
     public class DataOperation : IReturn<string>
     {
         /// <summary>
