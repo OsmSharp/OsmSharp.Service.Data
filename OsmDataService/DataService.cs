@@ -2,11 +2,11 @@
 using System.IO;
 using System.Text;
 using OsmSharp.Osm.Data.Core.Processor;
-using OsmSharp.Osm.Data.Core.Processor.Filter;
 using OsmSharp.Osm.Data.PBF.Raw.Processor;
 using OsmSharp.Osm.Data.XML.Processor;
 using OsmSharp.Tools.Math.Geo;
 using OsmDataService.Databases;
+using OsmSharp.Osm.Data.Processor.Filter.BoundingBox;
 
 namespace OsmDataService
 {
